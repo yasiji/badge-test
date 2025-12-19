@@ -6,41 +6,172 @@
   <title>Badge virtuel</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 24px; background: #f4f4f4; }
-    .card { max-width: 520px; margin: 0 auto; background: white; border-radius: 16px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+    .card { max-width: 560px; margin: 0 auto; background: white; border-radius: 16px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
     .badge-img { width: 100%; border-radius: 12px; display:block; }
-    .info { margin-top: 16px; line-height: 1.6; }
-    .row { display:flex; justify-content:space-between; gap: 12px; }
+    .info { margin-top: 14px; line-height: 1.65; }
+    .row { display:flex; justify-content:space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid #eee; }
+    .row:last-child { border-bottom: none; }
     .label { color:#666; }
-    .value { font-weight: 700; }
+    .value { font-weight: 700; text-align: right; }
     .btn {
       display:block; text-align:center; margin-top: 16px; padding: 14px 16px;
       border-radius: 12px; background:#d40000; color:white; text-decoration:none; font-weight:700;
     }
-    .btn:active { transform: scale(.99); }
-    .hint { margin-top: 12px; font-size: 12px; color:#666; }
+    .muted { margin-top: 10px; font-size: 12px; color:#666; }
+    .error { margin-top: 10px; font-size: 13px; color:#b00020; }
   </style>
 </head>
 <body>
   <div class="card">
-    <!-- OPTIONAL: if you want to show the exact badge image, place badge.png next to this file -->
-    <!-- <img class="badge-img" src="badge.png" alt="Badge Maroc Telecom" /> -->
+    <!-- OPTIONAL: If you want a visual badge image, put badge.png in the same folder and uncomment: -->
+    <!-- <img class="badge-img" src="badge.png" alt="Badge" /> -->
 
     <h2 style="margin:8px 0 0;">Badge virtuel</h2>
 
-    <div class="info">
-      <div class="row"><div class="label">Nom & Prénom</div><div class="value">Yassine AZARRAF</div></div>
-      <div class="row"><div class="label">ID</div><div class="value">33193</div></div>
-      <div class="row"><div class="label">Entité</div><div class="value">PRESIDENCE</div></div>
-      <div class="row"><div class="label">Téléphone</div><div class="value">+2126XXXXXXXX</div></div>
-      <div class="row"><div class="label">Email</div><div class="value">yassine.azarraf@maroc-telecom.ma</div></div>
+    <div class="info" id="info">
+      <div class="row"><div class="label">Nom & Prénom</div><div class="value" id="fn">—</div></div>
+      <div class="row"><div class="label">ID</div><div class="value" id="badgeId">—</div></div>
+      <div class="row"><div class="label">Entité</div><div class="value" id="entity">—</div></div>
+      <div class="row"><div class="label">Fonction</div><div class="value" id="title">—</div></div>
+      <div class="row"><div class="label">Téléphone</div><div class="value" id="tel">—</div></div>
+      <div class="row"><div class="label">Email</div><div class="value" id="email">—</div></div>
+      <div class="row"><div class="label">Adresse</div><div class="value" id="adr">—</div></div>
     </div>
 
-    <!-- Button: opens the VCF, phone then shows "Add contact" -->
-    <a class="btn" href="./badge-contact.vcf">Ajouter ce contact</a>
-
-    <div class="hint">
-      Astuce : après l’ajout, revenez en arrière pour retourner au badge virtuel.
-    </div>
+    <a class="btn" id="addBtn" href="./badge-contact.vcf">Ajouter ce contact</a>
+    <div class="muted">Après l’ajout, revenez en arrière pour retourner au badge virtuel.</div>
+    <div class="error" id="err" style="display:none;"></div>
   </div>
+
+  <script>
+    // Choose which VCF to load:
+    // - default: ./badge-contact.vcf
+    // - or via URL: index.html?vcf=someone.vcf
+    const params = new URLSearchParams(location.search);
+    const vcfFile = params.get("vcf") || "badge-contact.vcf";
+    document.getElementById("addBtn").setAttribute("href", "./" + vcfFile);
+
+    function showError(msg) {
+      const el = document.getElementById("err");
+      el.textContent = msg;
+      el.style.display = "block";
+    }
+
+    function unfoldVCard(text) {
+      // vCard line folding: CRLF + space/tab means the line continues
+      return text.replace(/\r?\n[ \t]/g, "");
+    }
+
+    function decodeValue(v) {
+      // Basic unescaping for vCard
+      return v
+        .replace(/\\n/gi, "\n")
+        .replace(/\\,/g, ",")
+        .replace(/\\;/g, ";")
+        .replace(/\\\\/g, "\\")
+        .trim();
+    }
+
+    function parseVCard(text) {
+      const lines = unfoldVCard(text).replace(/\r/g, "").split("\n").filter(Boolean);
+
+      const fields = {}; // key -> array of { value, params }
+      for (const line of lines) {
+        if (/^(BEGIN|END|VERSION):/i.test(line)) continue;
+
+        const idx = line.indexOf(":");
+        if (idx === -1) continue;
+
+        const left = line.slice(0, idx);
+        const valueRaw = line.slice(idx + 1);
+
+        const parts = left.split(";");
+        const name = (parts[0] || "").toUpperCase();
+        const paramsPart = parts.slice(1);
+
+        const params = {};
+        for (const p of paramsPart) {
+          const eq = p.indexOf("=");
+          if (eq !== -1) {
+            const k = p.slice(0, eq).toUpperCase();
+            const val = p.slice(eq + 1).toUpperCase();
+            params[k] = val;
+          } else {
+            // TYPE may appear without "TYPE=" in some generators
+            params["TYPE"] = (params["TYPE"] ? params["TYPE"] + "," : "") + p.toUpperCase();
+          }
+        }
+
+        const entry = { value: decodeValue(valueRaw), params };
+        if (!fields[name]) fields[name] = [];
+        fields[name].push(entry);
+      }
+
+      const pickByType = (arr, preferredTypes = []) => {
+        if (!arr || arr.length === 0) return null;
+        const hasType = (entry, t) => {
+          const type = entry.params.TYPE || "";
+          return type.split(",").includes(t);
+        };
+        for (const t of preferredTypes) {
+          const found = arr.find(e => hasType(e, t));
+          if (found) return found.value;
+        }
+        return arr[0].value;
+      };
+
+      const fn = pickByType(fields.FN) || "";
+      const title = pickByType(fields.TITLE) || "";
+      const org = pickByType(fields.ORG) || "";
+      const tel = pickByType(fields.TEL, ["CELL", "MOBILE", "WORK"]) || "";
+      const email = pickByType(fields.EMAIL, ["WORK", "INTERNET"]) || "";
+
+      // ADR format: POBOX;EXT;STREET;LOCALITY;REGION;POSTAL;COUNTRY
+      let adr = "";
+      if (fields.ADR && fields.ADR[0]) {
+        const a = fields.ADR[0].value.split(";");
+        const street = a[2] || "";
+        const city = a[3] || "";
+        const region = a[4] || "";
+        const postal = a[5] || "";
+        const country = a[6] || "";
+        adr = [street, city, region, postal, country].filter(Boolean).join(", ");
+      }
+
+      const badgeId = pickByType(fields["X-BADGE-ID"]) || "";
+      const entity = pickByType(fields["X-ENTITY"]) || "";
+
+      return { fn, title, org, tel, email, adr, badgeId, entity };
+    }
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = value && value.length ? value : "—";
+    }
+
+    async function load() {
+      try {
+        const res = await fetch("./" + vcfFile, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const text = await res.text();
+        const data = parseVCard(text);
+
+        setText("fn", data.fn);
+        setText("badgeId", data.badgeId);
+        setText("entity", data.entity);
+        setText("title", data.title || data.org); // fallback
+        setText("tel", data.tel);
+        setText("email", data.email);
+        setText("adr", data.adr);
+
+      } catch (e) {
+        showError(
+          "Impossible de charger le fichier VCF (" + vcfFile + "). " +
+          "Assurez-vous que la page est ouverte via un site (GitHub Pages) ou un petit serveur local, pas en file://"
+        );
+      }
+    }
+
+    load();
+  </script>
 </body>
 </html>
