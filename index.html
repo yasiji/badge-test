@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Badge virtuel</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 24px; background: #f4f4f4; }
+    .card { max-width: 520px; margin: 0 auto; background: white; border-radius: 16px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+    .badge-img { width: 100%; border-radius: 12px; display:block; }
+    .info { margin-top: 16px; line-height: 1.6; }
+    .row { display:flex; justify-content:space-between; gap: 12px; }
+    .label { color:#666; }
+    .value { font-weight: 700; }
+    .btn {
+      display:block; text-align:center; margin-top: 16px; padding: 14px 16px;
+      border-radius: 12px; background:#d40000; color:white; text-decoration:none; font-weight:700;
+    }
+    .btn:active { transform: scale(.99); }
+    .hint { margin-top: 12px; font-size: 12px; color:#666; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- OPTIONAL: if you want to show the exact badge image, place badge.png next to this file -->
+    <!-- <img class="badge-img" src="badge.png" alt="Badge Maroc Telecom" /> -->
+
+    <h2 style="margin:8px 0 0;">Badge virtuel</h2>
+
+    <div class="info">
+      <div class="row"><div class="label">Nom & Prénom</div><div class="value">Yassine AZARRAF</div></div>
+      <div class="row"><div class="label">ID</div><div class="value">33193</div></div>
+      <div class="row"><div class="label">Entité</div><div class="value">PRESIDENCE</div></div>
+      <div class="row"><div class="label">Téléphone</div><div class="value">+2126XXXXXXXX</div></div>
+      <div class="row"><div class="label">Email</div><div class="value">yassine.azarraf@maroc-telecom.ma</div></div>
+    </div>
+
+    <!-- Button: opens the VCF, phone then shows "Add contact" -->
+    <a class="btn" href="./badge-contact.vcf">Ajouter ce contact</a>
+
+    <div class="hint">
+      Astuce : après l’ajout, revenez en arrière pour retourner au badge virtuel.
+    </div>
+  </div>
+</body>
+</html>
