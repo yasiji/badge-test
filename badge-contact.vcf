@@ -3,9 +3,10 @@ VERSION:3.0
 N:AZARRAF;Yassine;;;
 FN:Yassine AZARRAF
 ORG:Maroc Telecom
-TITLE:PRESIDENCE
+TITLE:Senior Technician
 TEL;TYPE=CELL:+212606755429
-EMAIL:y.azarraf@iam.ma
-ADR;TYPE=Senior Technician:;;Your office address;Rabat;;;Morocco
-NOTE:Badge ID=33193
+EMAIL;TYPE=WORK:y.azarraf@iam.ma
+ADR;TYPE=WORK:;;Tour Maroc Telecom, Etage 19em, Av. Annakhil,;Rabat;;;Morocco
+X-BADGE-ID:33193
+X-ENTITY:PRESIDENCE
 END:VCARD
